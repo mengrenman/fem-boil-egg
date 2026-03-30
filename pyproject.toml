@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["egg_fem*"]
+
+[project]
+name = "egg_fem"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "scikit-fem>=9.0",
+    "gmsh>=4.11",
+    "meshio>=5.3",
+    "matplotlib>=3.7",
+]
