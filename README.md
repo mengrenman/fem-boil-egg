@@ -202,4 +202,4 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 
 ## License
 
-This project is provided for educational purposes.
+[MIT License](LICENSE) — boil at your own risk.
