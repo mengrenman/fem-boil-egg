@@ -11,14 +11,14 @@ Material properties are evaluated at the previous time-step temperature
 
 import numpy as np
 from scipy.sparse.linalg import spsolve
-from skfem import Basis, ElementTriP1, BilinearForm, asm, condense
+from skfem import Basis, FacetBasis, ElementTriP1, BilinearForm, LinearForm, asm
 from skfem.helpers import dot, grad
 
 from .materials import EggMaterial
 
 
 # ---------------------------------------------------------------------------
-# Bilinear forms
+# Bilinear and linear forms
 # ---------------------------------------------------------------------------
 
 @BilinearForm
@@ -33,6 +33,20 @@ def stiffness_axisym(u, v, w):
     """Stiffness matrix:  ∫ κ · ∇u·∇v · r  dr dz."""
     r = w.x[0]
     return w["kappa"] * dot(grad(u), grad(v)) * np.maximum(r, 1e-12)
+
+
+@BilinearForm
+def robin_lhs_axisym(u, v, w):
+    """Boundary Robin matrix:  ∫_Γ h · u · v · r  ds."""
+    r = w.x[0]
+    return w["h"] * u * v * np.maximum(r, 1e-12)
+
+
+@LinearForm
+def robin_rhs_axisym(v, w):
+    """Boundary Robin vector:  ∫_Γ h · T_boundary · v · r  ds."""
+    r = w.x[0]
+    return w["h"] * w["T_boundary"] * v * np.maximum(r, 1e-12)
 
 
 # ---------------------------------------------------------------------------
@@ -53,20 +67,46 @@ class HeatSolver:
     T_init : float
         Initial temperature [K].
     T_boundary : float
-        Dirichlet temperature on the "shell" boundary [K].
+        Ambient or Dirichlet temperature on the "shell" boundary [K].
     dt : float
         Time step [s].
+    h_conv : float or None, optional
+        Convective / effective shell heat transfer coefficient [W/(m²·K)].
+        If ``None`` (default), a Dirichlet condition ``T = T_boundary`` is
+        applied on the shell boundary.  If a positive float is given, a
+        Robin boundary condition ``-κ ∂T/∂n = h_conv (T - T_boundary)`` is
+        applied on the shell boundary.
     """
 
-    def __init__(self, mesh, material, T_init, T_boundary, dt):
+    def __init__(self, mesh, material, T_init, T_boundary, dt, h_conv=None):
         self.mesh = mesh
         self.elem = ElementTriP1()
         self.basis = Basis(mesh, self.elem)
         self.dt = dt
         self.T_boundary = T_boundary
+        self.h_conv = h_conv
 
         # DOFs on the shell boundary
         self.shell_dofs = self.basis.get_dofs("shell").all()
+
+        # Pre-assemble Robin boundary contributions if h_conv is provided
+        if self.h_conv is not None:
+            self.shell_fbasis = FacetBasis(
+                mesh, self.elem, facets=mesh.boundaries["shell"]
+            )
+            self._K_robin = asm(
+                robin_lhs_axisym, self.shell_fbasis, h=float(self.h_conv)
+            )
+            self._f_robin = asm(
+                robin_rhs_axisym,
+                self.shell_fbasis,
+                h=float(self.h_conv),
+                T_boundary=float(self.T_boundary),
+            )
+        else:
+            self.shell_fbasis = None
+            self._K_robin = None
+            self._f_robin = None
 
         # Material setup
         self._multi_region = isinstance(material, dict)
@@ -78,8 +118,9 @@ class HeatSolver:
             self.material = material
 
         # State
-        self.T = np.full(self.basis.N, T_init)
-        self.T[self.shell_dofs] = T_boundary
+        self.T = np.full(self.basis.N, float(T_init))
+        if self.h_conv is None:
+            self.T[self.shell_dofs] = T_boundary
         self.time = 0.0
 
         # Storage
@@ -105,19 +146,19 @@ class HeatSolver:
         Returns arrays matching the shape of the interpolated field
         (n_elements, n_qp) in scikit-fem's convention.
         """
-        T_field = self.basis.interpolate(self.T)  # DiscreteField at quad pts
+        T_qp = np.asarray(self.basis.interpolate(self.T))  # values at quad pts
 
         if not self._multi_region:
-            rho_cp = self.material.rho_cp(T_field.value)
-            kappa = self.material.conductivity(T_field.value)
+            rho_cp = self.material.rho_cp(T_qp)
+            kappa = self.material.conductivity(T_qp)
         else:
-            rho_cp = np.empty_like(T_field.value)
-            kappa = np.empty_like(T_field.value)
+            rho_cp = np.empty_like(T_qp)
+            kappa = np.empty_like(T_qp)
             for name, mat in self.materials.items():
                 if name in self.mesh.subdomains:
                     elems = self.mesh.subdomains[name]
-                    rho_cp[elems] = mat.rho_cp(T_field.value[elems])
-                    kappa[elems] = mat.conductivity(T_field.value[elems])
+                    rho_cp[elems] = mat.rho_cp(T_qp[elems])
+                    kappa[elems] = mat.conductivity(T_qp[elems])
         return rho_cp, kappa
 
     # ------------------------------------------------------------------
@@ -131,14 +172,20 @@ class HeatSolver:
         M = asm(mass_axisym, self.basis, rho_cp=rho_cp)
         K = asm(stiffness_axisym, self.basis, kappa=kappa)
 
-        A = M / self.dt + K
-        b = M @ self.T / self.dt
+        if self.h_conv is not None:
+            A = M / self.dt + K + self._K_robin
+            b = M @ self.T / self.dt + self._f_robin
+            self.T = spsolve(A.tocsc(), b)
+        else:
+            A = M / self.dt + K
+            b = M @ self.T / self.dt
 
-        # Dirichlet BC: T = T_boundary on shell
-        bc_vec = np.zeros_like(self.T)
-        bc_vec[self.shell_dofs] = self.T_boundary
+            # Dirichlet BC: T = T_boundary on shell
+            bc_vec = np.zeros_like(self.T)
+            bc_vec[self.shell_dofs] = self.T_boundary
 
-        self.T = solve_condense(A, b, bc_vec, self.shell_dofs)
+            self.T = solve_condense(A, b, bc_vec, self.shell_dofs)
+
         self.time += self.dt
 
         self.times.append(self.time)

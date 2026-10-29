@@ -22,9 +22,11 @@ fem_boil_egg/
 ├── requirements.txt              # pip dependencies
 ├── egg_fem/                      # Core Python package
 │   ├── __init__.py
-│   ├── materials.py              # Temperature-dependent material properties
+│   ├── materials.py              # Temperature-dependent & latent-heat material properties
 │   ├── geometry.py               # Mesh generation (circular + egg-shaped)
-│   └── solver.py                 # Axisymmetric FEM heat solver
+│   └── solver.py                 # Axisymmetric FEM heat solver (Dirichlet & Robin BCs)
+├── tests/
+│   └── test_egg_fem.py           # Automated unit and physics verification tests
 └── notebooks/
     ├── 01_simple_model.ipynb     # Simple circular geometry, constant properties
     ├── 02_realistic_model.ipynb  # Egg-shaped geometry, multi-region, T-dependent
@@ -46,7 +48,13 @@ conda activate fem-boil-egg
 python -m venv .venv
 source .venv/bin/activate   # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
-pip install jupyterlab
+pip install jupyterlab pytest
+```
+
+### Run the tests
+
+```bash
+pytest
 ```
 
 ### Run the notebooks
@@ -85,14 +93,15 @@ The egg is modeled as an axisymmetric body in the (r, z) half-plane. The outer p
 | Density              | 1034-1040 kg/m^3 | 1020-1030 kg/m^3 |
 | Thermal conductivity | 0.50-0.60 W/(m K)| 0.32-0.36 W/(m K)|
 | Specific heat        | ~3800 J/(kg K)   | ~3300 J/(kg K)   |
+| Denaturation enthalpy| ~2.0 kJ/kg (opt) | ~1.8 kJ/kg (opt) |
 
-All properties vary with temperature (linear fits from experimental data).
+All properties vary with temperature (linear fits from experimental data). Optional presets (`egg_white_denaturation_properties`, `egg_yolk_denaturation_properties`) incorporate endothermic latent heat of protein denaturation via an apparent heat capacity Gaussian peak.
 
 ### Solver
 
 - Backward Euler (implicit) time integration
 - Lagged nonlinear coefficients (properties evaluated at T^n to solve for T^{n+1})
-- Dirichlet boundary at the shell (T = 100 C), natural symmetry condition at r = 0
+- Shell boundary condition: Dirichlet (`T = 100 C`, `h_conv=None`) or convective Robin (`-κ ∂T/∂n = h_conv (T - T_boundary)`, e.g. `h_conv=H_BOILING_SHELL`), with natural symmetry at `r = 0`
 
 ### Key Results
 
