@@ -88,25 +88,9 @@ class HeatSolver:
 
         # DOFs on the shell boundary
         self.shell_dofs = self.basis.get_dofs("shell").all()
-
-        # Pre-assemble Robin boundary contributions if h_conv is provided
-        if self.h_conv is not None:
-            self.shell_fbasis = FacetBasis(
-                mesh, self.elem, facets=mesh.boundaries["shell"]
-            )
-            self._K_robin = asm(
-                robin_lhs_axisym, self.shell_fbasis, h=float(self.h_conv)
-            )
-            self._f_robin = asm(
-                robin_rhs_axisym,
-                self.shell_fbasis,
-                h=float(self.h_conv),
-                T_boundary=float(self.T_boundary),
-            )
-        else:
-            self.shell_fbasis = None
-            self._K_robin = None
-            self._f_robin = None
+        self.shell_fbasis = FacetBasis(
+            mesh, self.elem, facets=mesh.boundaries["shell"]
+        )
 
         # Material setup
         self._multi_region = isinstance(material, dict)
@@ -119,13 +103,37 @@ class HeatSolver:
 
         # State
         self.T = np.full(self.basis.N, float(T_init))
-        if self.h_conv is None:
-            self.T[self.shell_dofs] = T_boundary
+        self.set_boundary_conditions(T_boundary=T_boundary, h_conv=h_conv, update_shell_state=True)
         self.time = 0.0
 
         # Storage
         self.times = [0.0]
         self.temperatures = [self.T.copy()]
+
+    def set_boundary_conditions(self, T_boundary, h_conv=None, update_shell_state=False):
+        """Update shell boundary temperature and convective heat transfer coefficient.
+
+        Useful for multi-stage simulations (e.g. transferring a boiled egg to
+        an ice-water bath or resting in ambient air).
+        """
+        self.T_boundary = float(T_boundary)
+        self.h_conv = h_conv
+
+        if self.h_conv is not None:
+            self._K_robin = asm(
+                robin_lhs_axisym, self.shell_fbasis, h=float(self.h_conv)
+            )
+            self._f_robin = asm(
+                robin_rhs_axisym,
+                self.shell_fbasis,
+                h=float(self.h_conv),
+                T_boundary=self.T_boundary,
+            )
+        else:
+            self._K_robin = None
+            self._f_robin = None
+            if update_shell_state:
+                self.T[self.shell_dofs] = self.T_boundary
 
     # ------------------------------------------------------------------
     # Internal helpers
