@@ -86,8 +86,11 @@ class HeatSolver:
         self.T_boundary = T_boundary
         self.h_conv = h_conv
 
-        # DOFs on the shell boundary
+        # DOFs on the shell boundary & interior DOFs
         self.shell_dofs = self.basis.get_dofs("shell").all()
+        self.interior_dofs = np.setdiff1d(
+            np.arange(self.basis.N, dtype=int), self.shell_dofs
+        )
         self.shell_fbasis = FacetBasis(
             mesh, self.elem, facets=mesh.boundaries["shell"]
         )
@@ -96,7 +99,6 @@ class HeatSolver:
         self._multi_region = isinstance(material, dict)
         if self._multi_region:
             self.materials = material
-            # Build element -> material map
             self._elem_material = self._build_element_material_map()
         else:
             self.material = material
@@ -140,12 +142,14 @@ class HeatSolver:
     # ------------------------------------------------------------------
 
     def _build_element_material_map(self):
-        """Return an array mapping each element to 'yolk' or 'white'."""
+        """Return an array mapping each element to a key in self.materials."""
+        default_name = "white" if "white" in self.materials else next(iter(self.materials))
         n_elem = self.mesh.t.shape[1]
-        mat_map = np.empty(n_elem, dtype=object)
-        mat_map[:] = "white"  # default
-        if "yolk" in self.mesh.subdomains:
-            mat_map[self.mesh.subdomains["yolk"]] = "yolk"
+        mat_map = np.full(n_elem, default_name, dtype=object)
+        if self.mesh.subdomains is not None:
+            for name in self.materials:
+                if name in self.mesh.subdomains:
+                    mat_map[self.mesh.subdomains[name]] = name
         return mat_map
 
     def _eval_properties(self):
@@ -163,10 +167,10 @@ class HeatSolver:
             rho_cp = np.empty_like(T_qp)
             kappa = np.empty_like(T_qp)
             for name, mat in self.materials.items():
-                if name in self.mesh.subdomains:
-                    elems = self.mesh.subdomains[name]
-                    rho_cp[elems] = mat.rho_cp(T_qp[elems])
-                    kappa[elems] = mat.conductivity(T_qp[elems])
+                mask = self._elem_material == name
+                if np.any(mask):
+                    rho_cp[mask] = mat.rho_cp(T_qp[mask])
+                    kappa[mask] = mat.conductivity(T_qp[mask])
         return rho_cp, kappa
 
     # ------------------------------------------------------------------
@@ -192,7 +196,9 @@ class HeatSolver:
             bc_vec = np.zeros_like(self.T)
             bc_vec[self.shell_dofs] = self.T_boundary
 
-            self.T = solve_condense(A, b, bc_vec, self.shell_dofs)
+            self.T = solve_condense(
+                A, b, bc_vec, self.shell_dofs, interior=self.interior_dofs
+            )
 
         self.time += self.dt
 
@@ -230,13 +236,21 @@ class HeatSolver:
         return self.times, self.temperatures
 
     def _center_dof(self):
-        """DOF index closest to (r, z) = (0, 0)."""
+        """DOF index closest to the yolk center (or geometric origin if no yolk)."""
         coords = self.basis.mesh.p  # (2, n_nodes)
-        dist = np.sqrt(coords[0] ** 2 + coords[1] ** 2)
+        target_z = 0.0
+        if self.mesh.subdomains is not None and "yolk" in self.mesh.subdomains:
+            yolk_nodes = np.unique(self.mesh.t[:, self.mesh.subdomains["yolk"]])
+            axis_yolk = yolk_nodes[coords[0, yolk_nodes] < 1e-6]
+            if len(axis_yolk) > 0:
+                target_z = 0.5 * (
+                    np.min(coords[1, axis_yolk]) + np.max(coords[1, axis_yolk])
+                )
+        dist = np.sqrt(coords[0] ** 2 + (coords[1] - target_z) ** 2)
         return int(np.argmin(dist))
 
     def temperature_at(self, r, z, step=-1):
-        """Interpolate temperature at a single point.
+        """Interpolate temperature at a single point (r, z).
 
         Parameters
         ----------
@@ -251,13 +265,18 @@ class HeatSolver:
             Temperature [K].
         """
         T = self.temperatures[step]
-        # Simple inverse-distance weighted interpolation
-        coords = self.mesh.p  # (2, n_nodes)
+        try:
+            probe = self.basis.probes(np.array([[float(r)], [float(z)]]))
+            val = probe @ T
+            if len(val) == 1 and np.isfinite(val[0]):
+                return float(val[0])
+        except Exception:
+            pass
+        # Fallback to inverse-distance weighted interpolation if point is slightly outside mesh
+        coords = self.mesh.p
         dist = np.sqrt((coords[0] - r) ** 2 + (coords[1] - z) ** 2)
-        # Use 4 nearest nodes
         idx = np.argsort(dist)[:4]
-        d = dist[idx]
-        d = np.maximum(d, 1e-15)
+        d = np.maximum(dist[idx], 1e-15)
         w = 1.0 / d
         return float(np.dot(w, T[idx]) / w.sum())
 
@@ -272,10 +291,11 @@ class HeatSolver:
 # Linear algebra helper
 # ---------------------------------------------------------------------------
 
-def solve_condense(A, b, x_bc, dofs):
+def solve_condense(A, b, x_bc, dofs, interior=None):
     """Solve A x = b with Dirichlet conditions x[dofs] = x_bc[dofs]."""
     u = x_bc.copy()
-    interior = np.setdiff1d(np.arange(A.shape[0]), dofs)
+    if interior is None:
+        interior = np.setdiff1d(np.arange(A.shape[0]), dofs)
     b_int = b[interior] - A[interior][:, dofs] @ x_bc[dofs]
     A_int = A[interior][:, interior]
     u[interior] = spsolve(A_int.tocsc(), b_int)

@@ -6,7 +6,6 @@ Bridges the axisymmetric FEM heat equation with options pricing theory:
   3. American Option / Optimal Stopping ("When to Pull the Egg") via Longstaff-Schwartz
 """
 
-from dataclasses import dataclass
 import numpy as np
 from scipy.stats import norm
 from scipy.sparse.linalg import spsolve
@@ -320,7 +319,8 @@ def solve_american_egg_option(
     # Longstaff-Schwartz backward induction
     cashflow = payoffs[:, -1].copy()
     stop_idx = np.full(n_paths, n_steps - 1, dtype=int)
-    exercise_boundary = np.full(n_steps, T_target_C)
+    exercise_boundary = np.full(n_steps, np.nan)
+    exercise_boundary[-1] = T_target_C
     df_step = np.exp(-discount_rate * dt)
 
     for j in range(n_steps - 2, -1, -1):

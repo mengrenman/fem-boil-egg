@@ -33,7 +33,7 @@ fem_boil_egg/
     ├── 01_simple_model.ipynb        # Simple spherical geometry & exact Fourier verification
     ├── 02_realistic_model.ipynb     # Egg-shaped geometry, yolk insulator effect & axial profile
     ├── 03_cooking_analysis.ipynb    # Cooking time predictions & parameter studies
-    └── 04_egg_options_pricing.ipynb # Black-Scholes heat FEM, corridor & American egg options
+    └── 04_options_pricing_on_an_egg.ipynb # Black-Scholes heat FEM, corridor & American egg options
 ```
 
 ## Setup
@@ -84,7 +84,7 @@ Uses the validated model to answer practical questions:
 - Effect of convective shell heat transfer (Robin BC) and endothermic protein denaturation enthalpy
 - Predicted cooking times for soft-, medium-, and hard-boiled eggs
 
-### 4. [Options Pricing on an Egg](notebooks/04_egg_options_pricing.ipynb)
+### 4. [Options Pricing on an Egg](notebooks/04_options_pricing_on_an_egg.ipynb)
 
 Connects heat transfer to quantitative finance and derivatives pricing:
 - **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Pricing a European Call option by solving the 1D log-transformed heat equation with `scikit-fem` P1 finite elements
@@ -168,13 +168,13 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 
 | Cooking Stage | Room Temp ($20\,^\circ\text{C}$, Dirichlet) | Fridge ($8\,^\circ\text{C}$, Dirichlet) | Room Temp (Robin BC + Latent Heat) |
 |---------------|---------------------------------------------|-----------------------------------------|------------------------------------|
-| **Soft-boiled** ($63\,^\circ\text{C}$ center)   | 9.9 min (592 s)  | 10.8 min (651 s) | 10.3 min (615 s) |
-| **Medium-boiled** ($65\,^\circ\text{C}$ center) | 10.2 min (614 s) | 11.2 min (671 s) | 10.7 min (640 s) |
-| **Hard-boiled** ($70\,^\circ\text{C}$ center)   | 11.2 min (672 s) | 12.1 min (728 s) | 11.6 min (699 s) |
+| **Soft-boiled** ($63\,^\circ\text{C}$ center)   | 9.8 min (590 s)  | 10.8 min (648 s) | 10.2 min (613 s) |
+| **Medium-boiled** ($65\,^\circ\text{C}$ center) | 10.2 min (611 s) | 11.1 min (669 s) | 10.6 min (636 s) |
+| **Hard-boiled** ($70\,^\circ\text{C}$ center)   | 11.2 min (669 s) | 12.1 min (726 s) | 11.6 min (696 s) |
 
 ### Quantitative Finance on the Stove: Options Pricing on an Egg
 
-In [`04_egg_options_pricing.ipynb`](notebooks/04_egg_options_pricing.ipynb), we explore three quantitative finance models connected to egg heat diffusion:
+In [`04_options_pricing_on_an_egg.ipynb`](notebooks/04_options_pricing_on_an_egg.ipynb), we explore three quantitative finance models connected to egg heat diffusion:
 
 1. **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Solving the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$) with `scikit-fem` P1 finite elements matches the exact Black-Scholes formula to within $\$0.0035$:
 

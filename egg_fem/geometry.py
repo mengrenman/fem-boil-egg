@@ -145,8 +145,7 @@ def create_egg_mesh(
         r_pts, z_pts = egg_profile(n=60, length=length, breadth=breadth)
         point_ids = []
         for r, z in zip(r_pts, z_pts):
-            ms = mesh_size_boundary if r < 0.002 else mesh_size
-            pid = gmsh.model.geo.addPoint(r, z, 0, ms)
+            pid = gmsh.model.geo.addPoint(r, z, 0, mesh_size_boundary)
             point_ids.append(pid)
 
         # Spline through the profile points (top -> right -> bottom)
