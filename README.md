@@ -28,11 +28,12 @@ fem_boil_egg/
 │   └── options.py                # Black-Scholes heat FEM & Monte Carlo egg option pricing
 ├── figures/                      # Generated simulation plots for documentation
 ├── tests/
-│   └── test_egg_fem.py           # Automated unit and physics verification tests
+│   └── test_egg_fem.py              # Automated unit and physics verification tests
 └── notebooks/
-    ├── 01_simple_model.ipynb     # Spherical benchmark & Black-Scholes heat FEM duality
-    ├── 02_realistic_model.ipynb  # Egg-shaped geometry, yolk insulator effect & axial profile
-    └── 03_cooking_analysis.ipynb # Cooking times, parameter studies & egg options pricing
+    ├── 01_simple_model.ipynb        # Simple spherical geometry & exact Fourier verification
+    ├── 02_realistic_model.ipynb     # Egg-shaped geometry, yolk insulator effect & axial profile
+    ├── 03_cooking_analysis.ipynb    # Cooking time predictions & parameter studies
+    └── 04_egg_options_pricing.ipynb # Black-Scholes heat FEM, corridor & American egg options
 ```
 
 ## Setup
@@ -69,7 +70,7 @@ jupyter lab notebooks/
 
 ### 1. [Simple Model](notebooks/01_simple_model.ipynb)
 
-Introduces the axisymmetric FEM approach on a semicircular cross-section with constant material properties. Benchmarks the 2D axisymmetric FEM solution against the exact analytical 3D Fourier-Bessel series for a sphere, and demonstrates the **Black-Scholes $\leftrightarrow$ Heat Equation Duality** by pricing a European call option via 1D `scikit-fem` heat diffusion.
+Introduces the axisymmetric FEM approach on a semicircular cross-section with constant material properties. Demonstrates mesh generation, solver setup, and benchmarks the 2D axisymmetric FEM solution against the exact analytical 3D Fourier-Bessel series for a homogeneous sphere.
 
 ### 2. [Realistic Model](notebooks/02_realistic_model.ipynb)
 
@@ -77,12 +78,18 @@ Adds a realistic egg-shaped geometry (parametric B-spline profile), separate yol
 
 ### 3. [Cooking Analysis](notebooks/03_cooking_analysis.ipynb)
 
-Uses the validated model to answer practical and quantitative questions:
+Uses the validated model to answer practical questions:
 - Room temperature ($20\,^\circ\text{C}$) vs. refrigerated ($8\,^\circ\text{C}$) eggs
 - Effect of egg size (small, medium, large)
 - Effect of convective shell heat transfer (Robin BC) and endothermic protein denaturation enthalpy
 - Predicted cooking times for soft-, medium-, and hard-boiled eggs
-- **Quantitative Finance on the Stove**: Pricing a binary corridor option (*"Soft-Boil Warranty"*) and solving the **American optimal stopping problem** (*"When to pull the egg"*) via Longstaff-Schwartz Least-Squares Monte Carlo (LSM)
+
+### 4. [Options Pricing on an Egg](notebooks/04_egg_options_pricing.ipynb)
+
+Connects heat transfer to quantitative finance and derivatives pricing:
+- **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Pricing a European Call option by solving the 1D log-transformed heat equation with `scikit-fem` P1 finite elements
+- **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pricing a $\$10$ binary payout on $T_{\text{center}}(t_{\text{pull}}) \in [62.5\,^\circ\text{C}, 65.5\,^\circ\text{C}]$ under kitchen uncertainty
+- **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solving the dynamic pull-time decision via Longstaff-Schwartz Least-Squares Monte Carlo (LSM)
 
 ## Model Details
 
@@ -116,14 +123,6 @@ All properties vary with temperature (linear fits from experimental data). Optio
 - Shell boundary condition: Dirichlet ($T = 100\,^\circ\text{C}$, `h_conv=None`) or convective Robin ($-\kappa \frac{\partial T}{\partial n} = h_{\text{conv}}(T - T_{\text{boundary}})$, e.g. `h_conv=H_BOILING_SHELL`), with natural symmetry at $r = 0$
 
 ## Simulation Results
-
-### Analytical Verification & Black-Scholes Heat FEM Duality
-
-In [`01_simple_model.ipynb`](notebooks/01_simple_model.ipynb), the axisymmetric 2D FEM solver is verified against the exact analytical 3D sphere heat series, and the same P1 finite element machinery solves the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$, max error $< \$0.002$):
-
-<p align="center">
-  <img src="figures/bs_heat_duality.png" alt="Analytical Verification and Black-Scholes Heat FEM Duality" width="850">
-</p>
 
 ### Temperature Field Evolution & Yolk Insulator Effect
 
@@ -175,10 +174,16 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 
 ### Quantitative Finance on the Stove: Options Pricing on an Egg
 
-In [`03_cooking_analysis.ipynb`](notebooks/03_cooking_analysis.ipynb), real-world kitchen uncertainty—random fridge/counter starting temperature $T_0 \sim \mathcal{N}(14\,^\circ\text{C}, 3.5\,^\circ\text{C})$, egg size variation $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.2\text{ mm})$, and bath temperature fluctuations—is modeled as a stochastic process to price two "culinary derivatives":
+In [`04_egg_options_pricing.ipynb`](notebooks/04_egg_options_pricing.ipynb), we explore three quantitative finance models connected to egg heat diffusion:
 
-1. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $\$10$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5\,^\circ\text{C}, 65.5\,^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty, the maximum price is **$\$1.89$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
-2. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another $15\text{ s}$ boosts expected culinary utility from **$40.2$** (best fixed timer) to **$74.1$** out of $100$—an **early exercise premium of $+33.9$ utility points ($+84.5\%$)**.
+1. **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Solving the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$) with `scikit-fem` P1 finite elements matches the exact Black-Scholes formula to within $\$0.0035$:
+
+<p align="center">
+  <img src="figures/bs_heat_duality.png" alt="Black-Scholes Heat FEM Duality" width="850">
+</p>
+
+2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $\$10$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5\,^\circ\text{C}, 65.5\,^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20\,^\circ\text{C}, 3.5\,^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99\,^\circ\text{C}, 1.2\,^\circ\text{C})$), the maximum price is **$\$1.89$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
+3. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another $15\text{ s}$ boosts expected culinary utility from **$40.2$** (best fixed timer) to **$74.1$** out of $100$—an **early exercise premium of $+33.9$ utility points ($+84.5\%$)**.
 
 <p align="center">
   <img src="figures/egg_options_pricing.png" alt="Egg Options Pricing and Optimal Stopping" width="850">
