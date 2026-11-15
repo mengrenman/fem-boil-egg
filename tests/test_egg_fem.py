@@ -215,3 +215,42 @@ def test_latent_heat_slows_heating():
     assert Tc_denat[-1] < Tc_std[-1]
     assert Tc_std[-1] - Tc_denat[-1] < 5.0  # physically reasonable difference
 
+
+# ---------------------------------------------------------------------------
+# 4. Options Pricing & Optimal Stopping Tests
+# ---------------------------------------------------------------------------
+
+def test_black_scholes_heat_fem_duality():
+    """Verify 1D FEM heat solver reproduces analytical Black-Scholes call prices."""
+    from egg_fem import solve_black_scholes_heat_fem
+
+    res = solve_black_scholes_heat_fem(K=100.0, T=1.0, r=0.05, sigma=0.25, n_nodes=401, n_steps=200)
+    S = res["S"]
+    mask = (S >= 60.0) & (S <= 150.0)
+    max_err = np.max(np.abs(res["V_fem"][mask] - res["V_exact"][mask]))
+    assert max_err < 0.05, f"FEM Black-Scholes error too large: {max_err:.4f}"
+
+
+def test_corridor_and_american_egg_options():
+    """Verify Corridor Option pricing and American Optimal Stopping (LSM)."""
+    from egg_fem import price_egg_corridor_option, solve_american_egg_option
+
+    t_grid = np.linspace(360.0, 780.0, 85)
+    corridor = price_egg_corridor_option(t_grid, n_paths=2000, seed=42)
+
+    # Probabilities sum to 1 at every pull time
+    prob_sum = (
+        corridor["prob_in_corridor"]
+        + corridor["prob_undercooked"]
+        + corridor["prob_overcooked"]
+    )
+    assert np.allclose(prob_sum, 1.0, atol=1e-12)
+    # Optimal pull time for soft-boiled corridor (62.5–65.5 °C) is around 9.5–10.5 min
+    assert 550.0 <= corridor["t_opt_s"] <= 650.0
+
+    # American option value must be strictly >= best fixed-time European value
+    amer = solve_american_egg_option(n_paths=1500, seed=42)
+    assert amer["american_value"] >= np.max(amer["european_values"])
+    assert np.mean(amer["stopping_temps_C"]) > 60.0
+    assert np.mean(amer["stopping_temps_C"]) < 68.0
+

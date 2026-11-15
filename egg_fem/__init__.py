@@ -33,3 +33,11 @@ from .solver import (
     robin_lhs_axisym,
     robin_rhs_axisym,
 )
+from .options import (
+    black_scholes_call,
+    solve_black_scholes_heat_fem,
+    fourier_sphere_center_temp,
+    price_egg_corridor_option,
+    egg_culinary_payoff,
+    solve_american_egg_option,
+)

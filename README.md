@@ -24,14 +24,15 @@ fem_boil_egg/
 │   ├── __init__.py
 │   ├── materials.py              # Temperature-dependent & latent-heat material properties
 │   ├── geometry.py               # Mesh generation (circular + egg-shaped)
-│   └── solver.py                 # Axisymmetric FEM heat solver (Dirichlet & Robin BCs)
+│   ├── solver.py                 # Axisymmetric FEM heat solver (Dirichlet & Robin BCs)
+│   └── options.py                # Black-Scholes heat FEM & Monte Carlo egg option pricing
 ├── figures/                      # Generated simulation plots for documentation
 ├── tests/
 │   └── test_egg_fem.py           # Automated unit and physics verification tests
 └── notebooks/
-    ├── 01_simple_model.ipynb     # Simple circular geometry, constant properties
-    ├── 02_realistic_model.ipynb  # Egg-shaped geometry, multi-region, T-dependent
-    └── 03_cooking_analysis.ipynb # Cooking time predictions & parameter studies
+    ├── 01_simple_model.ipynb     # Spherical benchmark & Black-Scholes heat FEM duality
+    ├── 02_realistic_model.ipynb  # Egg-shaped geometry, yolk insulator effect & axial profile
+    └── 03_cooking_analysis.ipynb # Cooking times, parameter studies & egg options pricing
 ```
 
 ## Setup
@@ -68,19 +69,20 @@ jupyter lab notebooks/
 
 ### 1. [Simple Model](notebooks/01_simple_model.ipynb)
 
-Introduces the FEM approach with a semicircular cross-section and constant material properties. Demonstrates mesh generation, solver setup, and basic visualization.
+Introduces the axisymmetric FEM approach on a semicircular cross-section with constant material properties. Benchmarks the 2D axisymmetric FEM solution against the exact analytical 3D Fourier-Bessel series for a sphere, and demonstrates the **Black-Scholes $\leftrightarrow$ Heat Equation Duality** by pricing a European call option via 1D `scikit-fem` heat diffusion.
 
 ### 2. [Realistic Model](notebooks/02_realistic_model.ipynb)
 
-Adds a realistic egg-shaped geometry (parametric B-spline profile), separate yolk and white regions with distinct temperature-dependent material properties, and refined meshing near the shell boundary.
+Adds a realistic egg-shaped geometry (parametric B-spline profile), separate yolk and white regions with distinct temperature-dependent material properties, and refined meshing near the shell boundary. Quantifies the **thermal insulator effect of the yolk** against a homogeneous all-white egg and visualizes the **axial temperature profile $T(0, z)$** from the blunt to the pointed end.
 
 ### 3. [Cooking Analysis](notebooks/03_cooking_analysis.ipynb)
 
-Uses the validated model to answer practical questions:
-- Room temperature (20 °C) vs. refrigerated (8 °C) eggs
+Uses the validated model to answer practical and quantitative questions:
+- Room temperature ($20\,^\circ\text{C}$) vs. refrigerated ($8\,^\circ\text{C}$) eggs
 - Effect of egg size (small, medium, large)
 - Effect of convective shell heat transfer (Robin BC) and endothermic protein denaturation enthalpy
 - Predicted cooking times for soft-, medium-, and hard-boiled eggs
+- **Quantitative Finance on the Stove**: Pricing a binary corridor option (*"Soft-Boil Warranty"*) and solving the **American optimal stopping problem** (*"When to pull the egg"*) via Longstaff-Schwartz Least-Squares Monte Carlo (LSM)
 
 ## Model Details
 
@@ -115,12 +117,26 @@ All properties vary with temperature (linear fits from experimental data). Optio
 
 ## Simulation Results
 
-### Temperature Field Evolution
+### Analytical Verification & Black-Scholes Heat FEM Duality
+
+In [`01_simple_model.ipynb`](notebooks/01_simple_model.ipynb), the axisymmetric 2D FEM solver is verified against the exact analytical 3D sphere heat series, and the same P1 finite element machinery solves the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$, max error $< \$0.002$):
+
+<p align="center">
+  <img src="figures/bs_heat_duality.png" alt="Analytical Verification and Black-Scholes Heat FEM Duality" width="850">
+</p>
+
+### Temperature Field Evolution & Yolk Insulator Effect
 
 Snapshots of the internal temperature distribution at 2-minute intervals with overlaid denaturation isotherms ($63\,^\circ\text{C}$, $65\,^\circ\text{C}$, and $70\,^\circ\text{C}$):
 
 <p align="center">
   <img src="figures/temperature_snapshots.png" alt="Temperature Field Snapshots" width="800">
+</p>
+
+Because egg yolk has roughly $40\%$ lower thermal conductivity than egg white ($\kappa_{\text{yolk}} \approx 0.34$ vs. $\kappa_{\text{white}} \approx 0.55\text{ W/(m}\cdot\text{K)}$), it acts as an internal thermal barrier—delaying the soft-boiled threshold by $\sim 55\text{ s}$ compared to a homogeneous all-white egg and shifting the coldest core slightly below $z = 0$:
+
+<p align="center">
+  <img src="figures/yolk_insulator_asymmetry.png" alt="Yolk Insulator Effect and Axial Temperature Profile" width="850">
 </p>
 
 Spatial temperature distribution when the yolk center reaches the soft-, medium-, and hard-boiled thresholds:
@@ -156,6 +172,17 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 | **Soft-boiled** ($63\,^\circ\text{C}$ center)   | 9.9 min (592 s)  | 10.8 min (651 s) | 10.3 min (615 s) |
 | **Medium-boiled** ($65\,^\circ\text{C}$ center) | 10.2 min (614 s) | 11.2 min (671 s) | 10.7 min (640 s) |
 | **Hard-boiled** ($70\,^\circ\text{C}$ center)   | 11.2 min (672 s) | 12.1 min (728 s) | 11.6 min (699 s) |
+
+### Quantitative Finance on the Stove: Options Pricing on an Egg
+
+In [`03_cooking_analysis.ipynb`](notebooks/03_cooking_analysis.ipynb), real-world kitchen uncertainty—random fridge/counter starting temperature $T_0 \sim \mathcal{N}(14\,^\circ\text{C}, 3.5\,^\circ\text{C})$, egg size variation $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.2\text{ mm})$, and bath temperature fluctuations—is modeled as a stochastic process to price two "culinary derivatives":
+
+1. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $\$10$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5\,^\circ\text{C}, 65.5\,^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty, the maximum price is **$\$1.89$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
+2. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another $15\text{ s}$ boosts expected culinary utility from **$40.2$** (best fixed timer) to **$74.1$** out of $100$—an **early exercise premium of $+33.9$ utility points ($+84.5\%$)**.
+
+<p align="center">
+  <img src="figures/egg_options_pricing.png" alt="Egg Options Pricing and Optimal Stopping" width="850">
+</p>
 
 ## License
 
