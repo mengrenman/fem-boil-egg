@@ -1,8 +1,8 @@
 # How Long to Boil an Egg? FEM Modeling with Python
 
-A finite element simulation of heat transfer during egg boiling, solving the axisymmetric transient heat equation:
+A finite element simulation of heat transfer during egg boiling, solving the axisymmetric transient heat equation in cylindrical coordinates $(r, z)$:
 
-$$\rho(T)\,C_p(T)\,\frac{\partial T}{\partial t} = \nabla \cdot \bigl(\kappa(T)\,\nabla T\bigr)$$
+$$\rho(T) C_p(T) \frac{\partial T}{\partial t} = \frac{1}{r} \frac{\partial}{\partial r}\left(r \kappa(T) \frac{\partial T}{\partial r}\right) + \frac{\partial}{\partial z}\left(\kappa(T) \frac{\partial T}{\partial z}\right)$$
 
 Built with [scikit-fem](https://github.com/kinnala/scikit-fem) and [gmsh](https://gmsh.info/), this project models the temperature evolution inside an egg immersed in boiling water, predicting cooking times for soft-, medium-, and hard-boiled eggs.
 
@@ -79,7 +79,7 @@ Adds a realistic egg-shaped geometry (parametric B-spline profile), separate yol
 ### 3. [Cooking Analysis](notebooks/03_cooking_analysis.ipynb)
 
 Uses the validated model to answer practical questions:
-- Room temperature ($20\,^\circ\text{C}$) vs. refrigerated ($8\,^\circ\text{C}$) eggs
+- Room temperature ($20^\circ\text{C}$) vs. refrigerated ($8^\circ\text{C}$) eggs
 - Effect of egg size (small, medium, large)
 - Effect of convective shell heat transfer (Robin BC) and endothermic protein denaturation enthalpy
 - Predicted cooking times for soft-, medium-, and hard-boiled eggs
@@ -88,7 +88,7 @@ Uses the validated model to answer practical questions:
 
 Connects heat transfer to quantitative finance and derivatives pricing:
 - **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Pricing a European Call option by solving the 1D log-transformed heat equation with `scikit-fem` P1 finite elements
-- **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pricing a $\$10$ binary payout on $T_{\text{center}}(t_{\text{pull}}) \in [62.5\,^\circ\text{C}, 65.5\,^\circ\text{C}]$ under kitchen uncertainty
+- **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pricing a $\$10$ binary payout on $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ under kitchen uncertainty
 - **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solving the dynamic pull-time decision via Longstaff-Schwartz Least-Squares Monte Carlo (LSM)
 
 ## Model Details
@@ -120,13 +120,13 @@ All properties vary with temperature (linear fits from experimental data). Optio
 
 - Backward Euler (implicit) time integration
 - Lagged nonlinear coefficients (properties evaluated at $T^n$ to solve for $T^{n+1}$)
-- Shell boundary condition: Dirichlet ($T = 100\,^\circ\text{C}$, `h_conv=None`) or convective Robin ($-\kappa \frac{\partial T}{\partial n} = h_{\text{conv}}(T - T_{\text{boundary}})$, e.g. `h_conv=H_BOILING_SHELL`), with natural symmetry at $r = 0$
+- Shell boundary condition: Dirichlet ($T = 100^\circ\text{C}$, `h_conv=None`) or convective Robin ($-\kappa \frac{\partial T}{\partial n} = h_{\text{conv}}(T - T_{\text{boundary}})$, e.g. `h_conv=H_BOILING_SHELL`), with natural symmetry at $r = 0$
 
 ## Simulation Results
 
 ### Temperature Field Evolution & Yolk Insulator Effect
 
-Snapshots of the internal temperature distribution at 2-minute intervals with overlaid denaturation isotherms ($63\,^\circ\text{C}$, $65\,^\circ\text{C}$, and $70\,^\circ\text{C}$):
+Snapshots of the internal temperature distribution at 2-minute intervals with overlaid denaturation isotherms ($63^\circ\text{C}$, $65^\circ\text{C}$, and $70^\circ\text{C}$):
 
 <p align="center">
   <img src="figures/temperature_snapshots.png" alt="Temperature Field Snapshots" width="800">
@@ -146,7 +146,7 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 
 ### Parameter Studies
 
-#### 1. Room Temperature ($20\,^\circ\text{C}$) vs. Refrigerated ($8\,^\circ\text{C}$)
+#### 1. Room Temperature ($20^\circ\text{C}$) vs. Refrigerated ($8^\circ\text{C}$)
 
 <p align="center">
   <img src="figures/room_vs_fridge.png" alt="Room Temperature vs Refrigerated Egg" width="650">
@@ -166,11 +166,11 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 
 ### Summary of Predicted Cooking Times (Medium Egg, $55\text{ mm} \times 42\text{ mm}$)
 
-| Cooking Stage | Room Temp ($20\,^\circ\text{C}$, Dirichlet) | Fridge ($8\,^\circ\text{C}$, Dirichlet) | Room Temp (Robin BC + Latent Heat) |
+| Cooking Stage | Room Temp ($20^\circ\text{C}$, Dirichlet) | Fridge ($8^\circ\text{C}$, Dirichlet) | Room Temp (Robin BC + Latent Heat) |
 |---------------|---------------------------------------------|-----------------------------------------|------------------------------------|
-| **Soft-boiled** ($63\,^\circ\text{C}$ center)   | 9.8 min (590 s)  | 10.8 min (648 s) | 10.2 min (613 s) |
-| **Medium-boiled** ($65\,^\circ\text{C}$ center) | 10.2 min (611 s) | 11.1 min (669 s) | 10.6 min (636 s) |
-| **Hard-boiled** ($70\,^\circ\text{C}$ center)   | 11.2 min (669 s) | 12.1 min (726 s) | 11.6 min (696 s) |
+| **Soft-boiled** ($63^\circ\text{C}$ center)   | 9.8 min (590 s)  | 10.8 min (648 s) | 10.2 min (613 s) |
+| **Medium-boiled** ($65^\circ\text{C}$ center) | 10.2 min (611 s) | 11.1 min (669 s) | 10.6 min (636 s) |
+| **Hard-boiled** ($70^\circ\text{C}$ center)   | 11.2 min (669 s) | 12.1 min (726 s) | 11.6 min (696 s) |
 
 ### Quantitative Finance on the Stove: Options Pricing on an Egg
 
@@ -182,7 +182,7 @@ In [`04_options_pricing_on_an_egg.ipynb`](notebooks/04_options_pricing_on_an_egg
   <img src="figures/bs_heat_duality.png" alt="Black-Scholes Heat FEM Duality" width="850">
 </p>
 
-2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $\$10$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5\,^\circ\text{C}, 65.5\,^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20\,^\circ\text{C}, 3.5\,^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99\,^\circ\text{C}, 1.2\,^\circ\text{C})$), the maximum price is **$\$1.89$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
+2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $\$10$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20^\circ\text{C}, 3.5^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99^\circ\text{C}, 1.2^\circ\text{C})$), the maximum price is **$\$1.89$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
 3. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another $15\text{ s}$ boosts expected culinary utility from **$40.2$** (best fixed timer) to **$74.1$** out of $100$—an **early exercise premium of $+33.9$ utility points ($+84.5\%$)**.
 
 <p align="center">
