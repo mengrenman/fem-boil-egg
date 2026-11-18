@@ -132,7 +132,7 @@ Snapshots of the internal temperature distribution at 2-minute intervals with ov
   <img src="figures/temperature_snapshots.png" alt="Temperature Field Snapshots" width="800">
 </p>
 
-Because egg yolk has roughly $40\%$ lower thermal conductivity than egg white ($\kappa_{\text{yolk}} \approx 0.34$ vs. $\kappa_{\text{white}} \approx 0.55\text{ W/(m}\cdot\text{K)}$), it acts as an internal thermal barrier—delaying the soft-boiled threshold by $\sim 55\text{ s}$ compared to a homogeneous all-white egg and shifting the coldest core slightly below $z = 0$:
+Because egg yolk has roughly 40% lower thermal conductivity than egg white ($\kappa_{\text{yolk}} \approx 0.34$ vs. $\kappa_{\text{white}} \approx 0.55\text{ W/(m}\cdot\text{K)}$), it acts as an internal thermal barrier—delaying the soft-boiled threshold by $\sim 55\text{ s}$ compared to a homogeneous all-white egg and shifting the coldest core slightly below $z = 0$:
 
 <p align="center">
   <img src="figures/yolk_insulator_asymmetry.png" alt="Yolk Insulator Effect and Axial Temperature Profile" width="850">
@@ -176,14 +176,14 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 
 In [`04_options_pricing_on_an_egg.ipynb`](notebooks/04_options_pricing_on_an_egg.ipynb), we explore three quantitative finance models connected to egg heat diffusion:
 
-1. **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Solving the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$) with `scikit-fem` P1 finite elements matches the exact Black-Scholes formula to within $0.0035\text{ USD}$:
+1. **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Solving the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$) with `scikit-fem` P1 finite elements matches the exact Black-Scholes formula to within 0.0035 USD:
 
 <p align="center">
   <img src="figures/bs_heat_duality.png" alt="Black-Scholes Heat FEM Duality" width="850">
 </p>
 
-2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $10\text{ USD}$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20^\circ\text{C}, 3.5^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99^\circ\text{C}, 1.2^\circ\text{C})$), the maximum price is **$1.89\text{ USD}$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
-3. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another $15\text{ s}$ boosts expected culinary utility from **$40.2$** (best fixed timer) to **$74.1$** out of $100$—an **early exercise premium of $+33.9$ utility points ($+84.5\%$)**.
+2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays 10 USD if $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20^\circ\text{C}, 3.5^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99^\circ\text{C}, 1.2^\circ\text{C})$), the maximum price is **1.89 USD** (18.9% hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
+3. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another 15 s boosts expected culinary utility from **40.2** (best fixed timer) to **74.1** out of 100—an **early exercise premium of +33.9 utility points (+84.5%)**.
 
 <p align="center">
   <img src="figures/egg_options_pricing.png" alt="Egg Options Pricing and Optimal Stopping" width="850">
