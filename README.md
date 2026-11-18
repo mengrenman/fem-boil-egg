@@ -188,7 +188,3 @@ In [`04_options_pricing_on_an_egg.ipynb`](notebooks/04_options_pricing_on_an_egg
 <p align="center">
   <img src="figures/egg_options_pricing.png" alt="Egg Options Pricing and Optimal Stopping" width="850">
 </p>
-
-## License
-
-[MIT](LICENSE)
