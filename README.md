@@ -182,7 +182,7 @@ In [`04_options_pricing_on_an_egg.ipynb`](notebooks/04_options_pricing_on_an_egg
   <img src="figures/bs_heat_duality.png" alt="Black-Scholes Heat FEM Duality" width="850">
 </p>
 
-2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays 10 USD if $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20^\circ\text{C}, 3.5^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99^\circ\text{C}, 1.2^\circ\text{C})$), the maximum price is **1.89 USD** (18.9% hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
+2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays 10 USD if $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty—with $T_0 \sim \mathcal{N}(20^\circ\text{C}, 3.5^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, and $T_{\text{bath}} \sim \mathcal{N}(99^\circ\text{C}, 1.2^\circ\text{C})$—the maximum price is **1.89 USD** (18.9% hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
 3. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another 15 s boosts expected culinary utility from **40.2** (best fixed timer) to **74.1** out of 100—an **early exercise premium of +33.9 utility points (+84.5%)**.
 
 <p align="center">
