@@ -88,7 +88,7 @@ Uses the validated model to answer practical questions:
 
 Connects heat transfer to quantitative finance and derivatives pricing:
 - **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Pricing a European Call option by solving the 1D log-transformed heat equation with `scikit-fem` P1 finite elements
-- **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pricing a $\$10$ binary payout on $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ under kitchen uncertainty
+- **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pricing a 10 USD binary payout on $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ under kitchen uncertainty
 - **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solving the dynamic pull-time decision via Longstaff-Schwartz Least-Squares Monte Carlo (LSM)
 
 ## Model Details
@@ -176,13 +176,13 @@ Spatial temperature distribution when the yolk center reaches the soft-, medium-
 
 In [`04_options_pricing_on_an_egg.ipynb`](notebooks/04_options_pricing_on_an_egg.ipynb), we explore three quantitative finance models connected to egg heat diffusion:
 
-1. **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Solving the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$) with `scikit-fem` P1 finite elements matches the exact Black-Scholes formula to within $\$0.0035$:
+1. **Black-Scholes $\leftrightarrow$ Heat Equation Duality**: Solving the log-transformed Black-Scholes PDE ($\partial u / \partial \tau = \partial^2 u / \partial x^2$) with `scikit-fem` P1 finite elements matches the exact Black-Scholes formula to within $0.0035\text{ USD}$:
 
 <p align="center">
   <img src="figures/bs_heat_duality.png" alt="Black-Scholes Heat FEM Duality" width="850">
 </p>
 
-2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $\$10$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20^\circ\text{C}, 3.5^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99^\circ\text{C}, 1.2^\circ\text{C})$), the maximum price is **$\$1.89$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
+2. **Corridor Digital Option (*"Soft-Boil Warranty"*)**: Pays $10\text{ USD}$ if $T_{\text{center}}(t_{\text{pull}}) \in [62.5^\circ\text{C}, 65.5^\circ\text{C}]$ at fixed pull time $t_{\text{pull}}$. Under kitchen uncertainty ($T_0 \sim \mathcal{N}(20^\circ\text{C}, 3.5^\circ\text{C})$, $R_{\text{eff}} \sim \mathcal{N}(22.8\text{ mm}, 1.4\text{ mm})$, $T_{\text{bath}} \sim \mathcal{N}(99^\circ\text{C}, 1.2^\circ\text{C})$), the maximum price is **$1.89\text{ USD}$** ($18.9\%$ hit probability) at $t_{\text{pull}}^* = 10.06\text{ min}$.
 3. **American Option / Optimal Stopping (*"When to Pull the Egg"*)**: Solved via **Longstaff-Schwartz Least-Squares Monte Carlo (LSM)**, dynamically deciding whether to pull the egg at time $t_k$ or continue boiling for another $15\text{ s}$ boosts expected culinary utility from **$40.2$** (best fixed timer) to **$74.1$** out of $100$—an **early exercise premium of $+33.9$ utility points ($+84.5\%$)**.
 
 <p align="center">
