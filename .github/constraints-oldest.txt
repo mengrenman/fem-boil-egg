@@ -1,0 +1,11 @@
+# The oldest dependency versions that pyproject.toml allows, used by the
+# "oldest" leg of the test workflow (Python 3.9):
+#   pip install -e ".[dev]" -c .github/constraints-oldest.txt
+# Keep these equal to the lower bounds in pyproject.toml.
+numpy==1.24.0
+scipy==1.10.0
+scikit-fem==9.0.0
+gmsh==4.11.0
+meshio==5.3.0
+matplotlib==3.7.0
+pytest==7.0.0

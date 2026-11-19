@@ -4,3 +4,8 @@ scikit-fem>=9.0
 gmsh>=4.11
 meshio>=5.3
 matplotlib>=3.7
+# Install the egg_fem package itself (editable) so that the notebooks, which
+# run with their working directory set to notebooks/, can "import egg_fem".
+# Run "pip install -r requirements.txt" from the repository root: pip resolves
+# this relative path against the current directory, not the file's location.
+-e .

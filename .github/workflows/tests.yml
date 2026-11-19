@@ -1,0 +1,103 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  # No display on the runners: make matplotlib use its non-interactive backend.
+  MPLBACKEND: Agg
+
+jobs:
+  pytest:
+    name: pytest (Python ${{ matrix.python-version }}, ${{ matrix.stack }} dependencies)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.9"
+            stack: latest
+          - python-version: "3.12"
+            stack: latest
+          # The oldest versions pyproject.toml allows (see .github/constraints-oldest.txt).
+          - python-version: "3.9"
+            stack: oldest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      # The gmsh pip wheel ships libgmsh.so, which links against these system
+      # libraries (libGLU/libGL, X11 client libraries, fontconfig) even though
+      # we only ever run gmsh headless.
+      - name: Install system libraries needed by the gmsh wheel
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libglu1-mesa libxcursor1 libxft2 libxinerama1 libxrender1
+
+      - name: Install egg_fem and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ "${{ matrix.stack }}" = "oldest" ]; then
+            python -m pip install -e ".[dev]" -c .github/constraints-oldest.txt
+          else
+            python -m pip install -e ".[dev]"
+          fi
+
+      - name: Run tests
+        run: python -m pytest
+
+  notebooks:
+    name: execute notebooks (Python 3.12)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install system libraries needed by the gmsh wheel
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libglu1-mesa libxcursor1 libxft2 libxinerama1 libxrender1
+
+      - name: Install egg_fem with notebook dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,notebooks]"
+
+      # Executes every notebook top to bottom and fails on the first error, so
+      # a notebook that no longer runs breaks the build. Outputs go to a
+      # temporary directory: the committed notebooks are never rewritten.
+      - name: Execute all notebooks
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          notebooks=(notebooks/*.ipynb)
+          if [ "${#notebooks[@]}" -eq 0 ]; then
+            echo "No notebooks found in notebooks/" >&2
+            exit 1
+          fi
+          out_dir="$(mktemp -d)"
+          for nb in "${notebooks[@]}"; do
+            echo "::group::Executing ${nb}"
+            python -m jupyter nbconvert --to notebook --execute \
+              --ExecutePreprocessor.timeout=1200 \
+              --output-dir "${out_dir}" "${nb}"
+            echo "::endgroup::"
+          done

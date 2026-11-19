@@ -7,9 +7,18 @@ dependencies:
   - numpy>=1.24
   - scipy>=1.10
   - matplotlib>=3.7
+  - pytest>=7.0
+  # Notebook tooling: JupyterLab to open them, ipykernel/nbconvert to run them.
   - jupyterlab
+  - ipykernel
+  - nbconvert
   - pip
   - pip:
       - scikit-fem>=9.0
       - gmsh>=4.11
       - meshio>=5.3
+      # Install the egg_fem package itself (editable) so that the notebooks,
+      # which run with their working directory set to notebooks/, can
+      # "import egg_fem". conda runs pip from the directory that contains this
+      # file, so keep environment.yml in the repository root.
+      - -e .

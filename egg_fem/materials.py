@@ -1,9 +1,25 @@
 """Temperature-dependent material properties for egg components.
 
 All properties are given as functions of temperature T [K].
-Data based on experimental measurements from literature:
-  - Coimbra et al. (2006), Int. J. Food Science & Technology
-  - Denys et al. (2004), J. Food Engineering
+
+Provenance of the property fits.  The linear temperature fits below are
+representative values chosen to match the range of published data for liquid
+egg white and yolk; they are not coefficients copied from a single paper.
+Sources whose data and ranges informed the choice:
+
+  - Coimbra, J. S. R., Gabas, A. L., Minim, L. A., Garcia Rojas, E. E.,
+    Telis, V. R. N., Telis-Romero, J. (2006).  Density, heat capacity and
+    thermal conductivity of liquid egg products.  Journal of Food
+    Engineering 74(2), 186-190.  doi:10.1016/j.jfoodeng.2005.01.043
+    (measured between 273 and 311 K, i.e. 0-38 °C).
+  - Denys, S., Pieters, J. G., Dewettinck, K. (2004).  Computational fluid
+    dynamics analysis of combined conductive and convective heat transfer in
+    model eggs.  Journal of Food Engineering 63(3), 281-290.
+    doi:10.1016/j.jfoodeng.2003.06.002.
+
+Caveats: above 38 °C the fits are extrapolations beyond the measured range,
+and they describe raw (liquid) egg, yet they are used here after the egg has
+coagulated.  The simulation inherits that uncertainty.
 """
 
 import numpy as np
@@ -57,8 +73,18 @@ WHITE_DENATURATION_K = 336.15  # 63 °C – egg white sets
 YOLK_DENATURATION_K = 338.15  # 65 °C – yolk begins to solidify
 YOLK_FULL_SET_K = 343.15  # 70 °C – yolk fully hard
 
-# Typical effective heat transfer coefficient [W/(m²·K)] combining boiling
-# water convection (~3000 W/(m²·K)) and eggshell conduction (~0.35 mm, κ ≈ 2.25 W/(m·K))
+# Effective shell heat transfer coefficient [W/(m²·K)] combining boiling-water
+# convection and eggshell conduction (~0.35 mm, κ ≈ 2.25 W/(m·K), i.e. about
+# 6400 W/(m²·K) for the shell alone).  The 3000 W/(m²·K) water-side value is an
+# assumption; published effective coefficients for eggs in hot water are about
+# 1000-2100 W/(m²·K) (e.g. 2072 W/(m²·K) in "Numerical modeling of heat
+# transfer and pasteurizing value during thermal processing of intact egg",
+# PMC4708634, measured at 60 °C).  The Biot number h*R/k is large (about 35 to
+# 126 for h = 1000 to 3000 W/(m²·K), R = 21 mm, k = 0.5 to 0.6 W/(m·K)), but
+# the film still matters at the level of tens of seconds: relative to a
+# Dirichlet (ideal-bath) shell the soft / medium / hard times of the default
+# egg are later by 26 / 33 / 32 s at h = 1000, 13 / 17 / 16 s at h = 2000 and
+# 9 / 11 / 11 s at h = 3000 W/(m²·K) (notebook 03).
 H_BOILING_SHELL = 2000.0
 
 

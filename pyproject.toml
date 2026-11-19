@@ -19,7 +19,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Test suite: pip install -e ".[dev]"
 dev = ["pytest>=7.0"]
+# Running the notebooks (executing them headless with nbconvert as well as
+# opening them in JupyterLab): pip install -e ".[notebooks]"
+notebooks = ["jupyterlab", "nbconvert", "ipykernel"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
