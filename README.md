@@ -412,7 +412,7 @@ The log-price and time-reversal transform turns the Black-Scholes PDE into the 1
 The Monte Carlo layers need the probe temperature of an egg in tens of thousands of kitchens. One reference FEM run of the default egg (20 °C egg, 100 °C Dirichlet bath) is condensed into the dimensionless response of a probe, `theta(t) = (T_probe(t) - T_bath) / (T_init - T_bath)`, stored in a `ThermalResponse` (`ThermalResponse.from_fem`). Other kitchens are obtained by similarity scaling, with s the linear size scale (every length multiplied by s):
 
 $$
-T(t;\, T_0, T_b, s) = T_b + (T_0 - T_b)\,\theta\!\left(t / s^2\right)
+T(t; T_0, T_b, s) = T_b + (T_0 - T_b) \theta\left(t / s^2\right)
 $$
 
 - **Probe.** The default probe is `white_min`, the coldest temperature in the white. For the default egg that point is on the yolk surface (on the axis at z = 13.0 mm at the moments the probe reaches 63, 66.5 and 70 °C), so the probe is the temperature of the coldest point of the yolk surface, not of the yolk surface as a whole. It reaches 63 °C at 343.3 s and 70 °C at 406.7 s, while the yolk center (an alternative probe) takes 615.4 s and 697.6 s.
