@@ -14,19 +14,24 @@ env:
 jobs:
   pytest:
     name: pytest (Python ${{ matrix.python-version }}, ${{ matrix.stack }} dependencies)
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
+        # Python 3.9 is end of life and actions/setup-python has no 3.9 build
+        # for Ubuntu 26.04 (ubuntu-latest), so the 3.9 legs run on 24.04.
         include:
           - python-version: "3.9"
             stack: latest
+            os: ubuntu-24.04
           - python-version: "3.12"
             stack: latest
+            os: ubuntu-latest
           # The oldest versions pyproject.toml allows (see .github/constraints-oldest.txt).
           - python-version: "3.9"
             stack: oldest
+            os: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
